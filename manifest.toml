@@ -30,9 +30,10 @@ ldap = false
 sso = false
 
 # Steady state is ~110M (source + 24M binary + ui/dist). The build is the
-# constraint: measured 650M of Go module cache plus 249M of Go build cache, and
-# ~400M of node_modules beforehand. _common.sh removes node_modules before the
-# Go build starts so those two never overlap, capping the peak around 1G.
+# constraint. Measured: ~360M in the install dir while node_modules is present,
+# plus a scratch dir holding 322M of pnpm store, 646M of Go module cache and
+# 250M of Go build cache. _common.sh drops node_modules before the Go build and
+# deletes the scratch dir afterwards, capping the peak around 1.7G.
 disk = "2G"
 # Both build halves are compiled from source. Vite/tsc is the heavier one; the
 # Go compiler peaked at ~300M resident per process, times GOMAXPROCS.
