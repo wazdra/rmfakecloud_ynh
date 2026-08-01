@@ -29,11 +29,13 @@ ldap = false
 
 sso = false
 
-# Steady state is well under 100M, but the build transiently needs room for the
-# Go module + build caches (~280 modules) on top of the unpacked source
+# Steady state is ~110M (source + 24M binary + ui/dist). The build is the
+# constraint: measured 650M of Go module cache plus 249M of Go build cache, and
+# ~400M of node_modules beforehand. _common.sh removes node_modules before the
+# Go build starts so those two never overlap, capping the peak around 1G.
 disk = "2G"
-# The Go toolchain and the Vite/TypeScript UI build are both compiled from
-# source at install time, which is by far the peak of the memory usage
+# Both build halves are compiled from source. Vite/tsc is the heavier one; the
+# Go compiler peaked at ~300M resident per process, times GOMAXPROCS.
 ram.build = "1500M"
 ram.runtime = "150M"
 
