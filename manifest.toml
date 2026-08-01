@@ -7,7 +7,7 @@ name = "rmfakecloud"
 description.en = "Self-hosted cloud service and web UI for reMarkable devices"
 description.fr = "Service cloud auto-hébergé et interface web pour appareils reMarkable"
 
-version = "0.0.31~ynh1"
+version = "0.0.31~ynh2"
 
 maintainers = ["anatoledahan"]
 
@@ -53,6 +53,10 @@ ram.runtime = "150M"
     # See the packaging documentation for the full set
     # of explanation regarding the behavior and properties for each of those
 
+    [resources.install_dir]
+    # This will create/remove the install dir as /var/www/$app
+    # and store the corresponding setting $install_dir
+    
     [resources.sources]
 
     [resources.sources.main]
