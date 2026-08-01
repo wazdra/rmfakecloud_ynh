@@ -34,6 +34,10 @@ ynh_app_setting_set --key=storage_url --value="$storage_url"
 
 rmfakecloud_config_add
 
+# The fail2ban jail watches the per-domain NGINX access log, so it has to
+# follow the new domain or it would keep tailing the old one
+rmfakecloud_fail2ban_add
+
 #=================================================
 # START SYSTEMD SERVICE
 #=================================================

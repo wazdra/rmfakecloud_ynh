@@ -41,6 +41,10 @@ systemctl enable "$app.service" --quiet
 
 yunohost service add "$app" --description="Cloud service for reMarkable devices"
 
+ynh_restore "/etc/fail2ban/jail.d/$app.conf"
+ynh_restore "/etc/fail2ban/filter.d/$app.conf"
+ynh_systemctl --service=fail2ban --action=restart
+
 #=================================================
 # RELOAD NGINX AND THE APP SERVICE
 #=================================================

@@ -54,10 +54,7 @@ rmfakecloud_config_add
 #=================================================
 ynh_script_progression "Upgrading system configurations related to $app..."
 
-ynh_config_add_nginx
-ynh_config_add_systemd
-
-yunohost service add "$app" --description="Cloud service for reMarkable devices"
+rmfakecloud_system_config_add
 
 #=================================================
 # START SYSTEMD SERVICE

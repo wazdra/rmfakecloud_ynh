@@ -80,6 +80,39 @@ rmfakecloud_build() {
 	chmod 750 "$install_dir/rmfakecloud"
 }
 
+# Jail the login form against brute force.
+#
+# This watches NGINX's per-domain access log rather than anything the app
+# writes, which is how YunoHost jails its own logins: see conf/fail2ban in the
+# YunoHost repo, where the yunohost and yunohost-portal filters are
+#   ^<HOST> -.*"POST /yunohost/api/login HTTP/\d.\d" 401
+# against /var/log/nginx/*access.log. The same shape applies here, since a
+# failed login is a 401 from POST /ui/api/login (internal/ui/routes.go).
+#
+# Reading NGINX rather than the app's log also means the address comes from
+# NGINX's own first field, not from a message the app formats, so nothing a
+# client submits can influence which IP gets banned.
+#
+# Kept separate from rmfakecloud_system_config_add because change_url has to
+# re-apply it: the log path is per-domain.
+rmfakecloud_fail2ban_add() {
+	ynh_config_add_fail2ban \
+		--logpath="/var/log/nginx/$domain-access.log" \
+		--failregex='^<HOST> -.*"POST /ui/api/login HTTP/\d\.\d" 401'
+}
+
+# Apply every system-level config. Shared by install and upgrade, which need
+# exactly the same set: `yunohost service add` overrides the existing entry, so
+# any flag missing from one of the two would be silently dropped on upgrade.
+rmfakecloud_system_config_add() {
+	ynh_config_add_nginx
+	ynh_config_add_systemd
+
+	yunohost service add "$app" --description="Cloud service for reMarkable devices"
+
+	rmfakecloud_fail2ban_add
+}
+
 # Render conf/rmfakecloud.env, loaded by the systemd unit as EnvironmentFile.
 # Shared by install, upgrade and change_url, which all need the exact same
 # template, permissions and ownership.
