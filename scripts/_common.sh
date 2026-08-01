@@ -32,28 +32,27 @@ rmfakecloud_pnpm() {
 # whose assets.go does `//go:embed dist/*`, so `go build` fails outright if
 # $install_dir/ui/dist does not exist yet.
 rmfakecloud_build() {
-	# Scratch space for the Go caches, see below. Kept inside $install_dir so it
-	# lands on the same filesystem the `disk` manifest key accounts for.
-	local go_scratch="$install_dir/.gobuild"
-
 	pushd "$install_dir/ui" >/dev/null
 		rmfakecloud_pnpm install --frozen-lockfile
 		rmfakecloud_pnpm run build
 	popd >/dev/null
 
-	# Drop node_modules (a few hundred MB) before the Go build rather than after,
-	# so the two caches never occupy the disk at the same time.
+	# node_modules is only needed to build the UI and weighs a few hundred MB.
+	# Dropped before the Go build so the two caches never coexist on disk.
 	ynh_safe_rm "$install_dir/ui/node_modules"
 
 	# YunoHost runs app scripts with no $HOME, and its Go helper only sets $PATH
 	# and $GOENV_ROOT. Go resolves its cache paths from $HOME and, unlike Node,
 	# has no getpwuid fallback, so it aborts with "module cache not found:
-	# neither GOMODCACHE nor GOPATH is set". Point the caches at our own scratch
-	# dir: this is also better isolation than a shared root-owned ~/go that
-	# every other app's build would share.
+	# neither GOMODCACHE nor GOPATH is set".
+	# ynh_smart_mktemp picks a location with enough room (measured: 650M of
+	# module cache + 249M of build cache) and aborts cleanly if the disk is too
+	# full, instead of failing halfway through the build.
+	local go_scratch
+	go_scratch="$(ynh_smart_mktemp --min_size=1024)"
 	export GOPATH="$go_scratch/path"
 	export GOCACHE="$go_scratch/cache"
-	mkdir -p "$GOPATH" "$GOCACHE"
+	mkdir --parents "$GOPATH" "$GOCACHE"
 
 	pushd "$install_dir" >/dev/null
 		ynh_hide_warnings go build \
@@ -68,22 +67,17 @@ rmfakecloud_build() {
 	chmod 750 "$install_dir/rmfakecloud"
 }
 
+# Render conf/rmfakecloud.env, which the systemd unit loads as EnvironmentFile.
+#
+# ynh_config_add is used rather than writing the file by hand: it backs the file
+# up if the admin edited it, stores a checksum in the app settings so the next
+# upgrade can detect that, and creates the file with safe ownership before
+# writing (avoiding a pre-created-file attack). It also aborts if any __VAR__ in
+# the template has no matching shell variable, which is why no manual guard on
+# $port_mqtt is needed any more.
 rmfakecloud_write_environment() {
-	local jwt_secret_key="${1:-}"
-	local storage_url="${2:-}"
-	local loglevel="${3:-info}"
+	ynh_config_add --template="rmfakecloud.env" --destination="$install_dir/rmfakecloud.env"
 
-	cat >"$install_dir/rmfakecloud.env" <<EOF
-JWT_SECRET_KEY=$jwt_secret_key
-STORAGE_URL=$storage_url
-PORT=$port
-MQTT_PORT=${port_mqtt:?port_mqtt setting is missing}
-DATADIR=$data_dir
-LOGLEVEL=$loglevel
-RM_HTTPS_COOKIE=true
-RM_TRUST_PROXY=true
-EOF
-
-	chown "$app:$app" "$install_dir/rmfakecloud.env"
 	chmod 600 "$install_dir/rmfakecloud.env"
+	chown "$app:$app" "$install_dir/rmfakecloud.env"
 }

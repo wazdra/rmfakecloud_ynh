@@ -13,7 +13,7 @@ ynh_abort_if_errors
 # DECLARE SETTINGS
 #=================================================
 
-jwt_secret_key="$(openssl rand -base64 48)"
+jwt_secret_key="$(ynh_string_random --length=48)"
 # rmfakecloud owns the whole domain, so no $path is involved here
 storage_url="https://$domain"
 loglevel="info"
@@ -46,7 +46,7 @@ rmfakecloud_build
 #=================================================
 ynh_script_progression "Adding $app's configuration..."
 
-rmfakecloud_write_environment "$jwt_secret_key" "$storage_url" "$loglevel"
+rmfakecloud_write_environment
 
 #=================================================
 # REAPPLY SYSTEM CONFIGURATION

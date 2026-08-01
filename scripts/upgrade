@@ -60,11 +60,12 @@ rmfakecloud_build
 #=================================================
 ynh_script_progression "Updating $app's configuration files..."
 
+# $jwt_secret_key and $loglevel are already in scope: YunoHost loads every app
+# setting as a bash variable before running the script.
 storage_url="https://$domain"
-loglevel="$(ynh_app_setting_get --key=loglevel)"
-jwt_secret_key="$(ynh_app_setting_get --key=jwt_secret_key)"
 ynh_app_setting_set --key=storage_url --value="$storage_url"
-rmfakecloud_write_environment "$jwt_secret_key" "$storage_url" "$loglevel"
+
+rmfakecloud_write_environment
 
 #=================================================
 # REAPPLY SYSTEM CONFIGURATION
