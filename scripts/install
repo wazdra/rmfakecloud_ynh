@@ -14,18 +14,13 @@ ynh_abort_if_errors
 #=================================================
 
 jwt_secret_key="$(openssl rand -base64 48)"
-storage_url="https://$domain$path"
+# rmfakecloud owns the whole domain, so no $path is involved here
+storage_url="https://$domain"
 loglevel="info"
 
 ynh_app_setting_set --key=jwt_secret_key --value="$jwt_secret_key"
 ynh_app_setting_set --key=storage_url --value="$storage_url"
 ynh_app_setting_set --key=loglevel --value="$loglevel"
-
-#=================================================
-# INITIALIZE AND STORE SETTINGS
-#=================================================
-
-ynh_app_setting_set --key=version --value="0.0.31"
 
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
@@ -39,26 +34,17 @@ ynh_script_progression "Setting up source files..."
 # Download, check integrity, uncompress and patch the source from manifest.toml
 ynh_setup_source --dest_dir="$install_dir"
 
-chown -R "$app:$app" "$install_dir"
-
 #=================================================
 # BUILD APPLICATION
 #=================================================
 ynh_script_progression "Building rmfakecloud..."
 
-pushd "$install_dir/ui" >/dev/null
-corepack prepare pnpm@latest-9 --activate
-pnpm install --frozen-lockfile
-pnpm build
-popd >/dev/null
+rmfakecloud_build
 
-go build -o "$install_dir/rmfakecloud" ./cmd/rmfakecloud
-chown "$app:$app" "$install_dir/rmfakecloud"
-### which will automatically be replaced by the values of $foo and $foo_bar
-###
-### ynh_config_add will also keep track of the config file's checksum,
-### which later during upgrade may allow to automatically backup the config file
-### if it's found that the file was manually modified
+#=================================================
+# ADD A CONFIGURATION
+#=================================================
+ynh_script_progression "Adding $app's configuration..."
 
 rmfakecloud_write_environment "$jwt_secret_key" "$storage_url" "$loglevel"
 
@@ -72,7 +58,7 @@ ynh_config_add_systemd
 
 yunohost service add "$app" --description="rmfakecloud"
 
-ynh_systemctl --service="$app" --action="start"
+ynh_systemctl --service="$app" --action="start" --wait_until="HTTP listening on port"
 
 #=================================================
 # END OF SCRIPT

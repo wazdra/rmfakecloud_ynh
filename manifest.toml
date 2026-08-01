@@ -29,8 +29,10 @@ ldap = false
 
 sso = false
 
-disk = "500M"
-ram.build = "500M"
+disk = "1G"
+# The Go toolchain and the Vite/TypeScript UI build are both compiled from
+# source at install time, which is by far the peak of the memory usage
+ram.build = "1500M"
 ram.runtime = "150M"
 
 [install]
@@ -38,10 +40,9 @@ ram.runtime = "150M"
     # this is a generic question - ask strings are automatically handled by YunoHost's core
     type = "domain"
 
-    [install.path]
-    # this is a generic question - ask strings are automatically handled by YunoHost's core
-    type = "path"
-    default = "/"
+    # NB: no "path" question on purpose. rmfakecloud must own the root of the
+    # domain: the web UI is built with an absolute base ("/"), and reMarkable
+    # devices hardcode root paths such as /token/json/2/device/new.
 
     [install.init_main_permission]
     # this is a generic question - ask strings are automatically handled by YunoHost's core
@@ -88,6 +89,14 @@ ram.runtime = "150M"
     [resources.ports]
     # This will pick a random port for reverse-proxying and store it as the $port setting
     main.default = 3000
+
+    # rmfakecloud *always* starts an MQTT broker (internal/app/app.go builds it
+    # unconditionally) and MQTT_PORT defaults to 8883 in upstream's config. Left
+    # alone it would squat that well-known port on every interface, outside of
+    # YunoHost's knowledge. Declaring it here makes the core allocate and track a
+    # free port instead. Not "exposed", so the firewall keeps it host-internal;
+    # clients reach the broker through the /mqtt websocket via NGINX.
+    mqtt.default = 8883
 
     [resources.go]
     version = "1.24.1"

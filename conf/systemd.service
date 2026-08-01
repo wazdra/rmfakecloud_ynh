@@ -14,6 +14,15 @@ Restart=on-failure
 StandardOutput=journal
 StandardError=inherit
 
+# This is a secondary service on an instance that runs many others: keep it
+# from starving them if it ever misbehaves. MemoryHigh throttles and reclaims
+# rather than OOM-killing, so a large document upload degrades instead of
+# failing outright. CPUWeight below the default 100 makes it yield under
+# contention.
+MemoryHigh=512M
+TasksMax=256
+CPUWeight=50
+
 ### Depending on specificities of your service/app, you may need to tweak these
 ### .. but this should be a good baseline
 # Sandboxing options to harden security
@@ -28,7 +37,10 @@ DevicePolicy=closed
 ProtectClock=yes
 ProtectHostname=yes
 ProtectProc=invisible
-ProtectSystem=full
+# The app writes only under DATADIR (internal/config/config.go), so the rest of
+# the filesystem -- including its own install dir -- can stay read-only.
+ProtectSystem=strict
+ReadWritePaths=__DATA_DIR__
 ProtectControlGroups=yes
 ProtectKernelModules=yes
 ProtectKernelTunables=yes

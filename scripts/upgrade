@@ -48,28 +48,19 @@ ynh_script_progression "Upgrading source files..."
 # Download, check integrity, uncompress and patch the source from manifest.toml
 ynh_setup_source --dest_dir="$install_dir" --full_replace --keep="rmfakecloud.env"
 
-chown -R "$app:$app" "$install_dir"
-
 #=================================================
 # BUILD APPLICATION
 #=================================================
 ynh_script_progression "Rebuilding rmfakecloud..."
 
-pushd "$install_dir/ui" >/dev/null
-corepack prepare pnpm@latest-9 --activate
-pnpm install --frozen-lockfile
-pnpm build
-popd >/dev/null
-
-go build -o "$install_dir/rmfakecloud" ./cmd/rmfakecloud
-chown "$app:$app" "$install_dir/rmfakecloud"
+rmfakecloud_build
 
 #=================================================
 # UPDATE A CONFIG FILE
 #=================================================
 ynh_script_progression "Updating $app's configuration files..."
 
-storage_url="https://$domain$path"
+storage_url="https://$domain"
 loglevel="$(ynh_app_setting_get --key=loglevel)"
 jwt_secret_key="$(ynh_app_setting_get --key=jwt_secret_key)"
 ynh_app_setting_set --key=storage_url --value="$storage_url"
@@ -91,7 +82,7 @@ yunohost service add "$app" --description="rmfakecloud"
 #=================================================
 ynh_script_progression "Starting $app's systemd service..."
 
-ynh_systemctl --service="$app" --action="start"
+ynh_systemctl --service="$app" --action="start" --wait_until="HTTP listening on port"
 
 #=================================================
 # END OF SCRIPT
