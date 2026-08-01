@@ -49,6 +49,14 @@ ram.runtime = "150M"
     # domain: the web UI is built with an absolute base ("/"), and reMarkable
     # devices hardcode root paths such as /token/json/2/device/new.
 
+    [install.admin]
+    type = "user"
+
+    [install.password]
+    help.en = "Password for the initial rmfakecloud administrator account. This is a separate account from your YunoHost one -- rmfakecloud has no LDAP support, so it cannot reuse YunoHost logins."
+    help.fr = "Mot de passe du compte administrateur initial de rmfakecloud. Ce compte est distinct de votre compte YunoHost : rmfakecloud ne gère pas LDAP et ne peut donc pas réutiliser les identifiants YunoHost."
+    type = "password"
+
     [install.init_main_permission]
     # this is a generic question - ask strings are automatically handled by YunoHost's core
     # This won't be saved as setting and will instead be used to initialize the SSOwat permission

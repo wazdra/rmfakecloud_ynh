@@ -16,9 +16,18 @@ storage_url="https://$domain"
 jwt_secret_key=$(ynh_string_random --length=48)
 loglevel="info"
 
+# rmfakecloud drops any character outside [a-zA-Z0-9.@_] from account names, so
+# a YunoHost username containing '-' does not survive as-is. Worse, the two
+# sides disagree: accounts are created through model.sanitizeEmail, which strips
+# it, while logins are looked up through common.SanitizeUid, which does not --
+# so 'jean-luc' would create 'jeanluc' and then fail to log in as 'jean-luc'.
+# Settle it here and record what the account is actually called.
+admin_login="${admin//-/}"
+
 ynh_app_setting_set --key=storage_url --value="$storage_url"
 ynh_app_setting_set --key=jwt_secret_key --value="$jwt_secret_key"
 ynh_app_setting_set --key=loglevel --value="$loglevel"
+ynh_app_setting_set --key=admin_login --value="$admin_login"
 
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
@@ -40,6 +49,28 @@ rmfakecloud_build
 ynh_script_progression "Adding $app's configuration files..."
 
 rmfakecloud_config_add
+
+#=================================================
+# CREATE THE ADMIN ACCOUNT
+#=================================================
+ynh_script_progression "Creating $app's administrator account..."
+
+# Must happen before the service is reachable. rmfakecloud sets
+# cfg.CreateFirstUser when no account exists (internal/app/app.go) and then
+# turns *whichever* credentials are submitted first into a permanent admin
+# (internal/ui/handlers.go). Since device sync requires the app to be open to
+# visitors, that would otherwise be a race anyone could win.
+#
+# -a keeps the account an admin. -s matters just as much: SetUser assigns
+# usr.Sync15 = *sync15 unconditionally, so omitting it would create the account
+# with the modern sync protocol disabled, unlike the web UI path which goes
+# through model.NewUser (Sync15: true).
+ynh_hide_warnings ynh_exec_as_app env DATADIR="$data_dir" \
+	"$install_dir/rmfakecloud" setuser -u "$admin_login" -p "$password" -a -s
+
+if [ "$admin_login" != "$admin" ]; then
+	ynh_print_warn "rmfakecloud does not accept '-' in account names: log in as '$admin_login', not '$admin'."
+fi
 
 #=================================================
 # SYSTEM CONFIGURATION
