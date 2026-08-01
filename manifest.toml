@@ -57,11 +57,7 @@ ram.runtime = "150M"
     help.fr = "Mot de passe du compte administrateur initial de rmfakecloud. Ce compte est distinct de votre compte YunoHost : rmfakecloud ne gère pas LDAP et ne peut donc pas réutiliser les identifiants YunoHost."
     type = "password"
 
-    [install.init_main_permission]
-    # this is a generic question - ask strings are automatically handled by YunoHost's core
-    # This won't be saved as setting and will instead be used to initialize the SSOwat permission
-    type = "group"
-    default = "visitors"
+    # NB: no "init_main_permission" question on purpose -- see resources.permissions.
 
 [resources]
     # See the packaging documentation for the full set
@@ -95,9 +91,14 @@ ram.runtime = "150M"
     # and store the corresponding setting $data_dir
 
     [resources.permissions]
-    # This will configure SSOwat permission for $domain/$path/
-    # The initial allowed group of user is configured via the init_main_permission question (public=visitors, private=all_users)
+    # Public, and deliberately not offered as an install question: reMarkable
+    # devices authenticate against paths such as /token/json/2/device/new
+    # without passing through the SSO, so restricting this to YunoHost users
+    # breaks syncing outright. There is only one workable answer, so asking
+    # would just invite an install that silently cannot sync.
+    # What protects the app is its own login plus the fail2ban jail.
     main.url = "/"
+    main.allowed = "visitors"
 
     [resources.ports]
     # This will pick a random port for reverse-proxying and store it as the $port setting
