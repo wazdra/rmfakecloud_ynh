@@ -7,19 +7,17 @@
 source _common.sh
 source /usr/share/yunohost/helpers
 
-ynh_abort_if_errors
-
 #=================================================
-# DECLARE SETTINGS
+# INITIALIZE AND STORE SETTINGS
 #=================================================
 
-jwt_secret_key="$(ynh_string_random --length=48)"
-# rmfakecloud owns the whole domain, so no $path is involved here
+# rmfakecloud owns the whole domain, so no $path is involved
 storage_url="https://$domain"
+jwt_secret_key=$(ynh_string_random --length=48)
 loglevel="info"
 
-ynh_app_setting_set --key=jwt_secret_key --value="$jwt_secret_key"
 ynh_app_setting_set --key=storage_url --value="$storage_url"
+ynh_app_setting_set --key=jwt_secret_key --value="$jwt_secret_key"
 ynh_app_setting_set --key=loglevel --value="$loglevel"
 
 #=================================================
@@ -27,36 +25,36 @@ ynh_app_setting_set --key=loglevel --value="$loglevel"
 #=================================================
 ynh_script_progression "Setting up source files..."
 
-### `ynh_setup_source` is used to install an app from a zip or tar.gz file,
-### downloaded from an upstream source, like a git repository.
-### `ynh_setup_source` use the file manifest.toml
-
-# Download, check integrity, uncompress and patch the source from manifest.toml
 ynh_setup_source --dest_dir="$install_dir"
 
 #=================================================
-# BUILD APPLICATION
+# BUILD THE APP
 #=================================================
-ynh_script_progression "Building rmfakecloud..."
+ynh_script_progression "Building $app..."
 
 rmfakecloud_build
 
 #=================================================
-# ADD A CONFIGURATION
+# APP INITIAL CONFIGURATION
 #=================================================
-ynh_script_progression "Adding $app's configuration..."
+ynh_script_progression "Adding $app's configuration files..."
 
-rmfakecloud_write_environment
+rmfakecloud_config_add
 
 #=================================================
-# REAPPLY SYSTEM CONFIGURATION
+# SYSTEM CONFIGURATION
 #=================================================
 ynh_script_progression "Adding system configurations related to $app..."
 
 ynh_config_add_nginx
 ynh_config_add_systemd
 
-yunohost service add "$app" --description="rmfakecloud"
+yunohost service add "$app" --description="Cloud service for reMarkable devices"
+
+#=================================================
+# START SYSTEMD SERVICE
+#=================================================
+ynh_script_progression "Starting $app's systemd service..."
 
 ynh_systemctl --service="$app" --action="start" --wait_until="HTTP listening on port" --log_path=systemd
 

@@ -8,14 +8,16 @@
 source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
 
-ynh_abort_if_errors
-
 #=================================================
 # RESTORE THE APP MAIN DIR
 #=================================================
 ynh_script_progression "Restoring the app main directory..."
 
+# NB: no rebuild here. The archive already holds the compiled binary and the
+# embedded UI, and neither Go nor Node is guaranteed to be provisioned in a
+# restore context.
 ynh_restore "$install_dir"
+
 chown -R "$app:$app" "$install_dir"
 
 #=================================================
@@ -37,16 +39,10 @@ ynh_restore "/etc/nginx/conf.d/$domain.d/$app.conf"
 ynh_restore "/etc/systemd/system/$app.service"
 systemctl enable "$app.service" --quiet
 
-yunohost service add "$app" --description="rmfakecloud"
+yunohost service add "$app" --description="Cloud service for reMarkable devices"
 
 #=================================================
-# RESTORE VARIOUS FILES
-#=================================================
-
-chown -R "$app:$app" "$install_dir"
-
-#=================================================
-# RELOAD NGINX AND PHP-FPM OR THE APP SERVICE
+# RELOAD NGINX AND THE APP SERVICE
 #=================================================
 ynh_script_progression "Reloading NGINX web server and $app's service..."
 

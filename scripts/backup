@@ -8,30 +8,25 @@
 source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
 
-ynh_abort_if_errors
-
 ynh_print_info "Declaring files to be backed up..."
 
-### N.B. : the following 'ynh_backup' calls are only a *declaration* of what needs
-### to be backuped and not an actual copy of any file. The actual backup that
-### creates and fills the archive with the files happens in the core after this
-### script is called. Hence ynh_backups calls take basically 0 seconds to run.
+# NB: the ynh_backup calls below are only a *declaration* of what needs to be
+# backed up. The core does the actual copying after this script has run.
 
 #=================================================
 # BACKUP THE APP MAIN DIR
 #=================================================
 
+# Includes the compiled binary: the restore script does not rebuild
 ynh_backup "$install_dir"
 
 #=================================================
 # BACKUP THE DATA DIR
 #=================================================
 
-# Only relevant if there is a "data_dir" resource for this app
-# NB: $data_dir is not backuped during safety-backup-before-upgrades,
-# because the data dir may be huge and we don't want to just yolo-create a 10+ GB archive just for upgrades.
-# On the other hand, $data_dir is also *not* removed by default in the "app remove" step unless --purge is used
-# This means that even if the upgrade fails and the backup is restored, the data are still there.
+# NB: $data_dir is not backed up during safety-backup-before-upgrades, because
+# it may be huge. It is also not removed by "app remove" unless --purge is used,
+# so a failed upgrade still leaves the documents in place.
 ynh_backup "$data_dir"
 
 #=================================================
@@ -40,7 +35,6 @@ ynh_backup "$data_dir"
 
 ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf"
 
-# Backup the systemd service unit
 ynh_backup "/etc/systemd/system/$app.service"
 
 #=================================================

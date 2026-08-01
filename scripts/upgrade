@@ -7,21 +7,6 @@
 source _common.sh
 source /usr/share/yunohost/helpers
 
-ynh_abort_if_errors
-
-### Settings are automatically loaded as bash variables
-### in every app script context, therefore typically these will exist:
-### - $domain
-### - $path
-### - $language
-### - $install_dir
-### - $port
-### ...
-
-### In the context of upgrade,
-### - resources are automatically provisioned / updated / deleted (depending on existing resources)
-### - a safety backup is automatically created by the core and will be restored if the upgrade fails
-
 #=================================================
 # STOP SYSTEMD SERVICE
 #=================================================
@@ -33,25 +18,22 @@ ynh_systemctl --service="$app" --action="stop"
 # ENSURE DOWNWARD COMPATIBILITY
 #=================================================
 ynh_script_progression "Ensuring downward compatibility..."
-ynh_app_setting_set_default --key=loglevel --value=info
+
+ynh_app_setting_set_default --key=loglevel --value="info"
 
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
 #=================================================
 ynh_script_progression "Upgrading source files..."
 
-### ynh_setup_source can wipe the destination dir if called with --full_replace.
-### On upgrade, that is certainly what you want, to remove any old source file that
-### does not exist in the new version of the software.
-### You can list with --keep every file/directory to *not* wipe or overwrite,
-### useful for configuration files, data directories, or plugins.
-# Download, check integrity, uncompress and patch the source from manifest.toml
+# --full_replace wipes anything the new version dropped; rmfakecloud.env is
+# kept so ynh_config_add can tell whether the admin edited it
 ynh_setup_source --dest_dir="$install_dir" --full_replace --keep="rmfakecloud.env"
 
 #=================================================
-# BUILD APPLICATION
+# BUILD THE APP
 #=================================================
-ynh_script_progression "Rebuilding rmfakecloud..."
+ynh_script_progression "Rebuilding $app..."
 
 rmfakecloud_build
 
@@ -61,11 +43,11 @@ rmfakecloud_build
 ynh_script_progression "Updating $app's configuration files..."
 
 # $jwt_secret_key and $loglevel are already in scope: YunoHost loads every app
-# setting as a bash variable before running the script.
+# setting as a bash variable before running the script
 storage_url="https://$domain"
 ynh_app_setting_set --key=storage_url --value="$storage_url"
 
-rmfakecloud_write_environment
+rmfakecloud_config_add
 
 #=================================================
 # REAPPLY SYSTEM CONFIGURATION
@@ -73,10 +55,9 @@ rmfakecloud_write_environment
 ynh_script_progression "Upgrading system configurations related to $app..."
 
 ynh_config_add_nginx
-
 ynh_config_add_systemd
 
-yunohost service add "$app" --description="rmfakecloud"
+yunohost service add "$app" --description="Cloud service for reMarkable devices"
 
 #=================================================
 # START SYSTEMD SERVICE
