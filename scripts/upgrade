@@ -82,7 +82,7 @@ yunohost service add "$app" --description="rmfakecloud"
 #=================================================
 ynh_script_progression "Starting $app's systemd service..."
 
-ynh_systemctl --service="$app" --action="start" --wait_until="HTTP listening on port"
+ynh_systemctl --service="$app" --action="start" --wait_until="HTTP listening on port" --log_path=systemd
 
 #=================================================
 # END OF SCRIPT

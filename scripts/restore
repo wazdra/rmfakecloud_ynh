@@ -50,7 +50,7 @@ chown -R "$app:$app" "$install_dir"
 #=================================================
 ynh_script_progression "Reloading NGINX web server and $app's service..."
 
-ynh_systemctl --service="$app" --action="start" --wait_until="HTTP listening on port"
+ynh_systemctl --service="$app" --action="start" --wait_until="HTTP listening on port" --log_path=systemd
 
 ynh_systemctl --service=nginx --action=reload
 
