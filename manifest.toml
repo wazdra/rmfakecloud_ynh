@@ -29,7 +29,9 @@ ldap = false
 
 sso = false
 
-disk = "1G"
+# Steady state is well under 100M, but the build transiently needs room for the
+# Go module + build caches (~280 modules) on top of the unpacked source
+disk = "2G"
 # The Go toolchain and the Vite/TypeScript UI build are both compiled from
 # source at install time, which is by far the peak of the memory usage
 ram.build = "1500M"

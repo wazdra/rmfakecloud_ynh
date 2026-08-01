@@ -32,10 +32,28 @@ rmfakecloud_pnpm() {
 # whose assets.go does `//go:embed dist/*`, so `go build` fails outright if
 # $install_dir/ui/dist does not exist yet.
 rmfakecloud_build() {
+	# Scratch space for the Go caches, see below. Kept inside $install_dir so it
+	# lands on the same filesystem the `disk` manifest key accounts for.
+	local go_scratch="$install_dir/.gobuild"
+
 	pushd "$install_dir/ui" >/dev/null
 		rmfakecloud_pnpm install --frozen-lockfile
 		rmfakecloud_pnpm run build
 	popd >/dev/null
+
+	# Drop node_modules (a few hundred MB) before the Go build rather than after,
+	# so the two caches never occupy the disk at the same time.
+	ynh_safe_rm "$install_dir/ui/node_modules"
+
+	# YunoHost runs app scripts with no $HOME, and its Go helper only sets $PATH
+	# and $GOENV_ROOT. Go resolves its cache paths from $HOME and, unlike Node,
+	# has no getpwuid fallback, so it aborts with "module cache not found:
+	# neither GOMODCACHE nor GOPATH is set". Point the caches at our own scratch
+	# dir: this is also better isolation than a shared root-owned ~/go that
+	# every other app's build would share.
+	export GOPATH="$go_scratch/path"
+	export GOCACHE="$go_scratch/cache"
+	mkdir -p "$GOPATH" "$GOCACHE"
 
 	pushd "$install_dir" >/dev/null
 		ynh_hide_warnings go build \
@@ -44,8 +62,7 @@ rmfakecloud_build() {
 			./cmd/rmfakecloud
 	popd >/dev/null
 
-	# node_modules is only needed to build the UI and weighs a few hundred MB
-	ynh_safe_rm "$install_dir/ui/node_modules"
+	ynh_safe_rm "$go_scratch"
 
 	chown -R "$app:$app" "$install_dir"
 	chmod 750 "$install_dir/rmfakecloud"
