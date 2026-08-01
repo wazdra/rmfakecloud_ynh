@@ -39,16 +39,6 @@ ynh_script_progression "Setting up source files..."
 # Download, check integrity, uncompress and patch the source from manifest.toml
 ynh_setup_source --dest_dir="$install_dir"
 
-### $install_dir will automatically be initialized with some decent
-### permission by default... however, you may need to recursively reapply
-### ownership to all files such as after the ynh_setup_source step
-chown -R "$app:www-data" "$install_dir"
-
-#=================================================
-# APP INITIAL CONFIGURATION
-#=================================================
-ynh_setup_source --dest_dir="$install_dir"
-
 chown -R "$app:$app" "$install_dir"
 
 #=================================================
@@ -71,24 +61,16 @@ chown "$app:$app" "$install_dir/rmfakecloud"
 ### if it's found that the file was manually modified
 
 rmfakecloud_write_environment "$jwt_secret_key" "$storage_url" "$loglevel"
-###   - You can remove these files in conf/.
-###   - Remove the section "BACKUP THE PHP-FPM CONFIGURATION" in the backup script
-###   - Remove also the section "REMOVE PHP-FPM CONFIGURATION" in the remove script
-###   - As well as the section "RESTORE THE PHP-FPM CONFIGURATION" in the restore script
-###     with the reload at the end of the script.
-###   - Remove the section "BACKUP SYSTEMD" in the backup script
-###   - Remove also the section "STOP AND REMOVE SERVICE" in the remove script
-###   - As well as the section "RESTORE SYSTEMD" in the restore script
-###   - As well as the section "INTEGRATE SERVICE IN YUNOHOST" in the restore script
-###   - And the section "INTEGRATE SERVICE IN YUNOHOST" in the upgrade script
 
+#=================================================
+# REAPPLY SYSTEM CONFIGURATION
+#=================================================
+ynh_script_progression "Adding system configurations related to $app..."
+
+ynh_config_add_nginx
+ynh_config_add_systemd
 
 yunohost service add "$app" --description="rmfakecloud"
-### forms.
-
-###   - As well as the section "START SYSTEMD SERVICE" in the restore script
-###   - As well as the section"STOP SYSTEMD SERVICE" and "START SYSTEMD SERVICE" in the upgrade script
-###   - And the section "STOP SYSTEMD SERVICE" and "START SYSTEMD SERVICE" in the change_url script
 
 ynh_systemctl --service="$app" --action="start"
 
