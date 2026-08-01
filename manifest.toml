@@ -53,10 +53,6 @@ ram.runtime = "150M"
     # See the packaging documentation for the full set
     # of explanation regarding the behavior and properties for each of those
 
-    [resources.install_dir]
-    # This will create/remove the install dir as /var/www/$app
-    # and store the corresponding setting $install_dir
-    
     [resources.sources]
 
     [resources.sources.main]
@@ -73,18 +69,12 @@ ram.runtime = "150M"
 
     autoupdate.strategy = "latest_github_tag"
 
-    [resources.go]
-    version = "1.24.1"
+    [resources.system_user]
+    # This will provision/deprovision a unix system user
 
-    [resources.nodejs]
-    version = "22"
     [resources.install_dir]
     # This will create/remove the install dir as /var/www/$app
     # and store the corresponding setting $install_dir
-
-
-    [resources.system_user]
-    # This will provision/deprovision a unix system user
 
     [resources.data_dir]
     # This will create/remove the data dir as /home/yunohost.app/$app
@@ -99,3 +89,8 @@ ram.runtime = "150M"
     # This will pick a random port for reverse-proxying and store it as the $port setting
     main.default = 3000
 
+    [resources.go]
+    version = "1.24.1"
+
+    [resources.nodejs]
+    version = "22"
