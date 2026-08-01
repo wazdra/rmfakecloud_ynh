@@ -1,14 +1,17 @@
 [Unit]
-Description=Small description of the service
-After=network.target
+Description=rmfakecloud
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=__APP__
 Group=__APP__
 WorkingDirectory=__INSTALL_DIR__/
-ExecStart=__INSTALL_DIR__/script
-StandardOutput=append:/var/log/__APP__/__APP__.log
+EnvironmentFile=__INSTALL_DIR__/rmfakecloud.env
+ExecStart=__INSTALL_DIR__/rmfakecloud
+Restart=on-failure
+StandardOutput=journal
 StandardError=inherit
 
 ### Depending on specificities of your service/app, you may need to tweak these

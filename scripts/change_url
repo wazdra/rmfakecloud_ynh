@@ -11,6 +11,8 @@
 source _common.sh
 source /usr/share/yunohost/helpers
 
+ynh_abort_if_errors
+
 #=================================================
 # STOP SYSTEMD SERVICE
 #=================================================
@@ -30,7 +32,11 @@ ynh_config_change_url_nginx
 # SPECIFIC MODIFICATIONS
 #=================================================
 
-## do any changes to files that reference specific installation domain/path, i.e. regenerate configs etc
+storage_url="https://$domain$path"
+jwt_secret_key="$(ynh_app_setting_get --key=jwt_secret_key)"
+loglevel="$(ynh_app_setting_get --key=loglevel)"
+ynh_app_setting_set --key=storage_url --value="$storage_url"
+rmfakecloud_write_environment "$jwt_secret_key" "$storage_url" "$loglevel"
 
 #=================================================
 # START SYSTEMD SERVICE
