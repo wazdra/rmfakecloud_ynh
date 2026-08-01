@@ -9,10 +9,9 @@ description.fr = "Service cloud auto-hébergé et interface web pour appareils r
 
 version = "0.0.31~ynh2"
 
-maintainers = ["anatoledahan"]
+maintainers = ["wazdra"]
 
 [upstream]
-# NB: Only the "license" key is mandatory. Remove entries for which there's no relevant data
 license = "AGPL-3.0-only"
 website = "https://ddvk.github.io/rmfakecloud/"
 admindoc = "https://doc.yunohost.org/dev/packaging/"
@@ -23,31 +22,22 @@ code = "https://github.com/ddvk/rmfakecloud"
 yunohost = ">= 12.1.17"
 helpers_version = "2.1"
 architectures = "all"
-multi_instance = true
+multi_instance = false
 
 ldap = false
 
 sso = false
 
-# Steady state is ~110M (source + 24M binary + ui/dist). The build is the
-# constraint. Measured: ~360M in the install dir while node_modules is present,
-# plus a scratch dir holding 322M of pnpm store, 646M of Go module cache and
-# 250M of Go build cache. _common.sh drops node_modules before the Go build and
-# deletes the scratch dir afterwards, capping the peak around 1.7G.
+
 disk = "2G"
-# Both build halves are compiled from source. Vite/tsc is the heavier one; the
-# Go compiler peaked at ~300M resident per process, times GOMAXPROCS.
 ram.build = "1500M"
 ram.runtime = "150M"
 
 [install]
     [install.domain]
-    # this is a generic question - ask strings are automatically handled by YunoHost's core
     type = "domain"
 
-    # NB: no "path" question on purpose. rmfakecloud must own the root of the
-    # domain: the web UI is built with an absolute base ("/"), and reMarkable
-    # devices hardcode root paths such as /token/json/2/device/new.
+    # The app must be installed at the root of a (sub)domain.
 
     [install.admin]
     type = "user"
@@ -57,59 +47,35 @@ ram.runtime = "150M"
     help.fr = "Mot de passe du compte administrateur initial de rmfakecloud. Ce compte est distinct de votre compte YunoHost : rmfakecloud ne gère pas LDAP et ne peut donc pas réutiliser les identifiants YunoHost."
     type = "password"
 
-    # NB: no "init_main_permission" question on purpose -- see resources.permissions.
+[antifeatures]
+
+alpha-software.en = "Upstream is still work in progress."
 
 [resources]
-    # See the packaging documentation for the full set
-    # of explanation regarding the behavior and properties for each of those
 
     [resources.sources]
 
     [resources.sources.main]
-    # This will pre-fetch the asset which can then be deployed during the install/upgrade scripts with :
-    #    ynh_setup_source --dest_dir="$install_dir"
-    # You can also define other assets than "main" and add --source_id="foobar" in the previous command
     url = "https://github.com/ddvk/rmfakecloud/archive/refs/tags/v0.0.31.tar.gz"
     sha256 = "702544eb5bf5b2f750428917e0b0b1610afb694233a25fb278a162820e1b91de"
 
-    # These infos are used by https://github.com/YunoHost/apps_tools/blob/main/autoupdate_app_sources/autoupdate_app_sources.py
-    # to auto-update the previous asset urls and sha256sum + manifest version
-    # assuming the upstream's code repo is on github and relies on tags or releases
-    # See the 'sources' resource documentation for more details
 
     autoupdate.strategy = "latest_github_tag"
 
     [resources.system_user]
-    # This will provision/deprovision a unix system user
 
     [resources.install_dir]
-    # This will create/remove the install dir as /var/www/$app
-    # and store the corresponding setting $install_dir
+
 
     [resources.data_dir]
-    # This will create/remove the data dir as /home/yunohost.app/$app
-    # and store the corresponding setting $data_dir
+
 
     [resources.permissions]
-    # Public, and deliberately not offered as an install question: reMarkable
-    # devices authenticate against paths such as /token/json/2/device/new
-    # without passing through the SSO, so restricting this to YunoHost users
-    # breaks syncing outright. There is only one workable answer, so asking
-    # would just invite an install that silently cannot sync.
-    # What protects the app is its own login plus the fail2ban jail.
     main.url = "/"
     main.allowed = "visitors"
 
     [resources.ports]
-    # This will pick a random port for reverse-proxying and store it as the $port setting
     main.default = 3000
-
-    # rmfakecloud *always* starts an MQTT broker (internal/app/app.go builds it
-    # unconditionally) and MQTT_PORT defaults to 8883 in upstream's config. Left
-    # alone it would squat that well-known port on every interface, outside of
-    # YunoHost's knowledge. Declaring it here makes the core allocate and track a
-    # free port instead. Not "exposed", so the firewall keeps it host-internal;
-    # clients reach the broker through the /mqtt websocket via NGINX.
     mqtt.default = 8883
 
     [resources.go]
