@@ -1,1 +1,1 @@
-This is a dummy description of this app features
+Self-host syncing of PDFs and notebooks from reMarkable tablets.

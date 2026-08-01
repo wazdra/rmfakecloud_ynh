@@ -1,1 +1,1 @@
-Ceci est une fausse description des fonctionalités de l'app
+Autohéberger la synchronisation des pdfs et cahiers des tablettes reMarkable.

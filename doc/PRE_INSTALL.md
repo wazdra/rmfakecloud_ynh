@@ -1,1 +1,1 @@
-This is a dummy disclaimer to display prior to the install
+The app takes up a whole domain: tablets contact the domain root and cannot be pointed at a subpath.
