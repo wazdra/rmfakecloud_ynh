@@ -10,23 +10,20 @@ source /usr/share/yunohost/helpers
 
 ynh_print_info "Declaring files to be backed up..."
 
-# NB: the ynh_backup calls below are only a *declaration* of what needs to be
-# backed up. The core does the actual copying after this script has run.
+# These are declarations only; the core does the copying afterwards.
 
 #=================================================
 # BACKUP THE APP MAIN DIR
 #=================================================
 
-# Includes the compiled binary: the restore script does not rebuild
+# includes the compiled binary -- restore does not rebuild
 ynh_backup "$install_dir"
 
 #=================================================
 # BACKUP THE DATA DIR
 #=================================================
 
-# NB: $data_dir is not backed up during safety-backup-before-upgrades, because
-# it may be huge. It is also not removed by "app remove" unless --purge is used,
-# so a failed upgrade still leaves the documents in place.
+# skipped by the safety backup before upgrades, and kept unless --purge
 ynh_backup "$data_dir"
 
 #=================================================

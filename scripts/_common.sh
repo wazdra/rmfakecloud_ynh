@@ -4,20 +4,9 @@
 # COMMON VARIABLES AND CUSTOM HELPERS
 #=================================================
 
-# Run one build command as $app, with every cache pointed at $build_cache.
-#
-# $build_cache is a local of rmfakecloud_build; bash's dynamic scoping makes it
-# visible here. If this is ever called from anywhere else it will abort on the
-# unset variable, since the helpers enable `set -o nounset`.
-#
-# sudo resets the environment and ynh_exec_as_app only forwards PATH, so
-# anything the build needs must be listed explicitly below.
-#
-# HOME is the important one. resources.system_user gives the app user
-# /var/www/__APP__ as its home, which is exactly $install_dir -- a directory
-# that gets backed up by scripts/backup and wiped by `ynh_setup_source
-# --full_replace`. Left alone, corepack's cache and pnpm's store would be
-# written there and end up inside every backup archive.
+# Run a build command as $app. sudo drops the environment, so pass it explicitly.
+# HOME must not be the app user's real home: that is $install_dir, which is
+# backed up and wiped on upgrade.
 rmfakecloud_exec_build() {
 	ynh_hide_warnings ynh_exec_as_app env \
 		HOME="$build_cache" \
@@ -26,45 +15,22 @@ rmfakecloud_exec_build() {
 		"$@"
 }
 
-# Build the web UI, then the Go binary.
-#
-# Order matters: internal/ui/ui.go imports the `ui` package, whose assets.go
-# does `//go:embed dist/*`, so `go build` fails outright unless the UI has been
-# built into $install_dir/ui/dist first.
+# Build the web UI, then the Go binary. That order is mandatory: the binary
+# embeds ui/dist via go:embed.
 rmfakecloud_build() {
-	# Scratch space for all build caches, measured: 322M pnpm store, 646M Go
-	# module cache, 250M Go build cache. ynh_smart_mktemp picks a filesystem
-	# with room and dies cleanly if there is none, rather than failing halfway
-	# through the build.
-	# NB: app scripts run without $HOME, and the Go helper sets only $PATH and
-	# $GOENV_ROOT, so Go cannot derive its cache paths on its own -- it aborts
-	# with "module cache not found: neither GOMODCACHE nor GOPATH is set".
+	# Go cannot find its own cache paths without $HOME, which app scripts lack
 	local build_cache
 	build_cache=$(ynh_smart_mktemp --min_size=1536)
 	chown "$app:$app" "$build_cache"
 
-	# pnpm runs dependency postinstall scripts, so this deliberately does not
-	# run as root.
-	#
-	# Corepack's binary proxy is used rather than the more common
-	# `corepack enable && corepack prepare pnpm@X --activate`: `corepack enable`
-	# writes a `pnpm` shim next to the corepack binary, under
-	# /opt/node_n/n/versions/node/$nodejs_version/bin, which is shared with every
-	# other app on the instance using the same Node version, and `--activate`
-	# sets a global default in the shared Corepack cache. The proxy touches
-	# neither, and pins the version per call.
-	#
-	# Version 9 is required by ui/pnpm-lock.yaml (lockfileVersion 9.0), spelled
-	# out because upstream's package.json has no "packageManager" field.
-	# NB: Corepack ships with Node only up to 22.x. If resources.nodejs is
-	# bumped past 24, corepack will have to be installed separately.
+	# pnpm 9 per ui/pnpm-lock.yaml. Corepack's binary proxy avoids installing a
+	# shim into the Node dir shared with other apps.
 	pushd "$install_dir/ui" >/dev/null
 		rmfakecloud_exec_build corepack pnpm@9 install --frozen-lockfile
 		rmfakecloud_exec_build corepack pnpm@9 run build
 	popd >/dev/null
 
-	# node_modules is only needed to build the UI and weighs ~326M. Dropped
-	# before the Go build so the two never sit on disk at once.
+	# ~326M, and no longer needed once ui/dist exists
 	ynh_safe_rm "$install_dir/ui/node_modules"
 
 	pushd "$install_dir" >/dev/null
@@ -80,40 +46,21 @@ rmfakecloud_build() {
 	chmod 750 "$install_dir/rmfakecloud"
 }
 
-# Jail the login form against brute force.
-#
-# This watches NGINX's per-domain access log rather than anything the app
-# writes, which is how YunoHost jails its own logins: see conf/fail2ban in the
-# YunoHost repo, where the yunohost and yunohost-portal filters are
-#   ^<HOST> -.*"POST /yunohost/api/login HTTP/\d.\d" 401
-# against /var/log/nginx/*access.log. The same shape applies here, since a
-# failed login is a 401 from POST /ui/api/login (internal/ui/routes.go).
-#
-# Reading NGINX rather than the app's log also means the address comes from
-# NGINX's own first field, not from a message the app formats, so nothing a
-# client submits can influence which IP gets banned.
-#
-# A helper only because change_url has to re-apply it too: the log path is
-# per-domain, so a domain change must rewrite the jail.
-#
-# NB: ynh_config_add_nginx is deliberately NOT wrapped in a helper like this.
-# package_check decides whether an app is a webapp by grepping scripts/install
-# for '^ynh_config_add_nginx' (lib/parse_tests_toml.py). Hiding that call behind
-# a function silently downgrades the test plan from install.root to
-# install.nourl and drops change_url and every curl test.
+# Brute-force jail on the login form, reading NGINX's access log like YunoHost's
+# own jails do. A helper because change_url must re-apply it (per-domain path).
+# NB: do not wrap ynh_config_add_nginx the same way -- package_check greps
+# scripts/install for it to decide the app is a webapp.
 rmfakecloud_fail2ban_add() {
 	ynh_config_add_fail2ban \
 		--logpath="/var/log/nginx/$domain-access.log" \
 		--failregex='^<HOST> -.*"POST /ui/api/login HTTP/\d\.\d" 401'
 }
 
-# Render conf/rmfakecloud.env, loaded by the systemd unit as EnvironmentFile.
-# Shared by install, upgrade and change_url, which all need the exact same
-# template, permissions and ownership.
+# EnvironmentFile for the systemd unit
 rmfakecloud_config_add() {
 	ynh_config_add --template="rmfakecloud.env" --destination="$install_dir/rmfakecloud.env"
 
-	# 600 rather than 400: the file holds the JWT signing key
+	# holds the JWT signing key
 	chmod 600 "$install_dir/rmfakecloud.env"
 	chown "$app:$app" "$install_dir/rmfakecloud.env"
 }

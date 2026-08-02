@@ -26,8 +26,7 @@ ynh_app_setting_set_default --key=loglevel --value="info"
 #=================================================
 ynh_script_progression "Upgrading source files..."
 
-# --full_replace wipes anything the new version dropped; rmfakecloud.env is
-# kept so ynh_config_add can tell whether the admin edited it
+# keep the env file so ynh_config_add can detect admin edits
 ynh_setup_source --dest_dir="$install_dir" --full_replace --keep="rmfakecloud.env"
 
 #=================================================
@@ -42,8 +41,7 @@ rmfakecloud_build
 #=================================================
 ynh_script_progression "Updating $app's configuration files..."
 
-# $jwt_secret_key and $loglevel are already in scope: YunoHost loads every app
-# setting as a bash variable before running the script
+# other settings are already in scope as bash variables
 storage_url="https://$domain"
 ynh_app_setting_set --key=storage_url --value="$storage_url"
 
@@ -54,8 +52,8 @@ rmfakecloud_config_add
 #=================================================
 ynh_script_progression "Upgrading system configurations related to $app..."
 
-# NB: `yunohost service add` overwrites the existing entry, so this must keep
-# providing the same flags as scripts/install
+# `yunohost service add` overwrites the entry, so keep these flags in sync with
+# scripts/install
 ynh_config_add_nginx
 ynh_config_add_systemd
 

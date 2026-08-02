@@ -14,19 +14,13 @@ Restart=on-failure
 StandardOutput=journal
 StandardError=inherit
 
-# This is a secondary service on an instance that runs many others: keep it
-# from starving them if it ever misbehaves. MemoryHigh throttles and reclaims
-# rather than OOM-killing, so a large document upload degrades instead of
-# failing outright. CPUWeight below the default 100 makes it yield under
-# contention.
+# Keep a secondary service from starving the rest of the instance.
+# MemoryHigh throttles rather than OOM-killing.
 MemoryHigh=512M
 TasksMax=256
 CPUWeight=50
 
-### Depending on specificities of your service/app, you may need to tweak these
-### .. but this should be a good baseline
-# Sandboxing options to harden security
-# Details for these options: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+# Sandboxing. Details: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 NoNewPrivileges=yes
 PrivateTmp=yes
 PrivateDevices=yes
@@ -37,8 +31,7 @@ DevicePolicy=closed
 ProtectClock=yes
 ProtectHostname=yes
 ProtectProc=invisible
-# The app writes only under DATADIR (internal/config/config.go), so the rest of
-# the filesystem -- including its own install dir -- can stay read-only.
+# the app writes only under DATADIR
 ProtectSystem=strict
 ReadWritePaths=__DATA_DIR__
 ProtectControlGroups=yes

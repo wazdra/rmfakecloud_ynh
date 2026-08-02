@@ -26,16 +26,13 @@ ynh_config_change_url_nginx
 #=================================================
 ynh_script_progression "Updating $app's configuration files..."
 
-# STORAGE_URL is what reMarkable devices are told to sync against, so it has to
-# follow the new domain. NB: devices already paired keep the old host and will
-# need to be re-registered.
+# devices sync against STORAGE_URL; already-paired ones need re-registering
 storage_url="https://$domain"
 ynh_app_setting_set --key=storage_url --value="$storage_url"
 
 rmfakecloud_config_add
 
-# The fail2ban jail watches the per-domain NGINX access log, so it has to
-# follow the new domain or it would keep tailing the old one
+# the jail watches a per-domain log path
 rmfakecloud_fail2ban_add
 
 #=================================================

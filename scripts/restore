@@ -13,9 +13,7 @@ source /usr/share/yunohost/helpers
 #=================================================
 ynh_script_progression "Restoring the app main directory..."
 
-# NB: no rebuild here. The archive already holds the compiled binary and the
-# embedded UI, and neither Go nor Node is guaranteed to be provisioned in a
-# restore context.
+# no rebuild: the archive holds the compiled binary, and Go/Node may be absent
 ynh_restore "$install_dir"
 
 chown -R "$app:$app" "$install_dir"

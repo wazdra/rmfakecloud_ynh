@@ -4,29 +4,19 @@ test_format = 1.0
 
 [default]
 
-    # NB: the tests to run are deduced from the manifest. With no "path" question
-    # install.subdir is skipped, and with no "init_main_permission" question
-    # install.private is skipped too -- the app cannot work when restricted to
-    # YunoHost users, see the comment on resources.permissions.
-
-    # -------------------------------
-    # Checks that the app really works
-    # -------------------------------
+    # Tests are deduced from the manifest; these check the app actually works.
 
     [default.curl_tests]
 
-    # The UI is served from the Go binary's embedded filesystem (ui/assets.go
-    # does `go:embed dist/*`), so this also proves the web UI was actually built
-    # and embedded rather than silently skipped.
+    # also proves the UI was built and embedded into the binary
     home.path = "/"
     home.expect_title = "rmfakecloud"
     home.auto_test_assets = true
 
-    # The app's own health endpoint, i.e. NGINX really reaches the upstream
+    # proves NGINX reaches the upstream
     health.path = "/health"
     health.expect_content = "Working"
 
-    # What a reMarkable device asks for first. Must answer without any SSO
-    # round-trip, which is the whole reason the app is open to visitors.
+    # what a device asks for first, with no SSO round-trip
     discovery.path = "/discovery/v1/endpoints"
     discovery.expect_content = "webapp"

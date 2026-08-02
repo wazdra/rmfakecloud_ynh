@@ -14,8 +14,7 @@ maintainers = ["wazdra"]
 [upstream]
 license = "AGPL-3.0-only"
 website = "https://ddvk.github.io/rmfakecloud/"
-# NB: no "admindoc" -- upstream has no separate admin documentation, and the
-# linter rejects pointing it at YunoHost's own packaging docs
+# no admindoc: upstream has none
 userdoc = "https://ddvk.github.io/rmfakecloud/remarkable/setup/"
 code = "https://github.com/ddvk/rmfakecloud"
 
