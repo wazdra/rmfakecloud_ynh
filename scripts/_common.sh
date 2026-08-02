@@ -93,24 +93,18 @@ rmfakecloud_build() {
 # NGINX's own first field, not from a message the app formats, so nothing a
 # client submits can influence which IP gets banned.
 #
-# Kept separate from rmfakecloud_system_config_add because change_url has to
-# re-apply it: the log path is per-domain.
+# A helper only because change_url has to re-apply it too: the log path is
+# per-domain, so a domain change must rewrite the jail.
+#
+# NB: ynh_config_add_nginx is deliberately NOT wrapped in a helper like this.
+# package_check decides whether an app is a webapp by grepping scripts/install
+# for '^ynh_config_add_nginx' (lib/parse_tests_toml.py). Hiding that call behind
+# a function silently downgrades the test plan from install.root to
+# install.nourl and drops change_url and every curl test.
 rmfakecloud_fail2ban_add() {
 	ynh_config_add_fail2ban \
 		--logpath="/var/log/nginx/$domain-access.log" \
 		--failregex='^<HOST> -.*"POST /ui/api/login HTTP/\d\.\d" 401'
-}
-
-# Apply every system-level config. Shared by install and upgrade, which need
-# exactly the same set: `yunohost service add` overrides the existing entry, so
-# any flag missing from one of the two would be silently dropped on upgrade.
-rmfakecloud_system_config_add() {
-	ynh_config_add_nginx
-	ynh_config_add_systemd
-
-	yunohost service add "$app" --description="Cloud service for reMarkable devices"
-
-	rmfakecloud_fail2ban_add
 }
 
 # Render conf/rmfakecloud.env, loaded by the systemd unit as EnvironmentFile.

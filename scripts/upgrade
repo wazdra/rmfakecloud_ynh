@@ -54,7 +54,14 @@ rmfakecloud_config_add
 #=================================================
 ynh_script_progression "Upgrading system configurations related to $app..."
 
-rmfakecloud_system_config_add
+# NB: `yunohost service add` overwrites the existing entry, so this must keep
+# providing the same flags as scripts/install
+ynh_config_add_nginx
+ynh_config_add_systemd
+
+yunohost service add "$app" --description="Cloud service for reMarkable devices"
+
+rmfakecloud_fail2ban_add
 
 #=================================================
 # START SYSTEMD SERVICE
