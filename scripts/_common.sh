@@ -42,15 +42,6 @@ rmfakecloud_build() {
 	chmod 750 "$install_dir/rmfakecloud"
 }
 
-# fail2ban helper
-# NB: do not wrap ynh_config_add_nginx the same way -- package_check greps
-# scripts/install for it to decide the app is a webapp.
-rmfakecloud_fail2ban_add() {
-	ynh_config_add_fail2ban \
-		--logpath="/var/log/nginx/$domain-access.log" \
-		--failregex='^<HOST> -.*"POST /ui/api/login HTTP/\d\.\d" 401'
-}
-
 # EnvironmentFile for the systemd unit
 rmfakecloud_config_add() {
 	ynh_config_add --template="rmfakecloud.env" --destination="$install_dir/rmfakecloud.env"

@@ -59,7 +59,7 @@ ynh_config_add_systemd
 
 yunohost service add "$app" --description="Cloud service for reMarkable devices"
 
-rmfakecloud_fail2ban_add
+ynh_config_add_fail2ban
 
 #=================================================
 # START SYSTEMD SERVICE

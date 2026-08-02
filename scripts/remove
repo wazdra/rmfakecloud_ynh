@@ -7,8 +7,6 @@
 source _common.sh
 source /usr/share/yunohost/helpers
 
-# The helpers do not abort on error for this action, so cleanup can carry on.
-
 #=================================================
 # REMOVE SYSTEM CONFIGURATION
 #=================================================
