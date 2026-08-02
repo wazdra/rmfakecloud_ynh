@@ -4,9 +4,7 @@
 # COMMON VARIABLES AND CUSTOM HELPERS
 #=================================================
 
-# Run a build command as $app. sudo drops the environment, so pass it explicitly.
-# HOME must not be the app user's real home: that is $install_dir, which is
-# backed up and wiped on upgrade.
+# General wrapper to run a build command as $app. 
 rmfakecloud_exec_build() {
 	ynh_hide_warnings ynh_exec_as_app env \
 		HOME="$build_cache" \
@@ -15,16 +13,13 @@ rmfakecloud_exec_build() {
 		"$@"
 }
 
-# Build the web UI, then the Go binary. That order is mandatory: the binary
-# embeds ui/dist via go:embed.
+# Build the web UI, then the Go binary.
 rmfakecloud_build() {
-	# Go cannot find its own cache paths without $HOME, which app scripts lack
 	local build_cache
 	build_cache=$(ynh_smart_mktemp --min_size=1536)
 	chown "$app:$app" "$build_cache"
 
-	# pnpm 9 per ui/pnpm-lock.yaml. Corepack's binary proxy avoids installing a
-	# shim into the Node dir shared with other apps.
+    # WebUI build
 	pushd "$install_dir/ui" >/dev/null
 		rmfakecloud_exec_build corepack pnpm@9 install --frozen-lockfile
 		rmfakecloud_exec_build corepack pnpm@9 run build
@@ -33,6 +28,7 @@ rmfakecloud_build() {
 	# ~326M, and no longer needed once ui/dist exists
 	ynh_safe_rm "$install_dir/ui/node_modules"
 
+    # Go backend build
 	pushd "$install_dir" >/dev/null
 		rmfakecloud_exec_build go build \
 			-ldflags "-s -w -X main.version=$YNH_APP_MANIFEST_VERSION" \
@@ -46,8 +42,7 @@ rmfakecloud_build() {
 	chmod 750 "$install_dir/rmfakecloud"
 }
 
-# Brute-force jail on the login form, reading NGINX's access log like YunoHost's
-# own jails do. A helper because change_url must re-apply it (per-domain path).
+# fail2ban helper
 # NB: do not wrap ynh_config_add_nginx the same way -- package_check greps
 # scripts/install for it to decide the app is a webapp.
 rmfakecloud_fail2ban_add() {
