@@ -33,7 +33,7 @@ ynh_app_setting_set --key=storage_url --value="$storage_url"
 rmfakecloud_config_add
 
 # the jail's logpath embeds the domain
-ynh_config_add_fail2ban
+ynh_config_add_fail2ban --logpath="/var/log/nginx/$domain-access.log"
 
 #=================================================
 # START SYSTEMD SERVICE
